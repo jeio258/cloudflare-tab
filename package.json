@@ -1,0 +1,25 @@
+{
+  "name": "gotab-cf",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare": "node scripts/prepare.mjs",
+    "dev": "npm run prepare && wrangler pages dev dist",
+    "deploy": "npm run prepare && wrangler pages deploy dist --project-name gotab-cf --branch main",
+    "db:migrate": "wrangler d1 execute gotab-cf-db --file schema.sql",
+    "db:migrate:local": "wrangler d1 execute gotab-cf-db --local --file schema.sql",
+    "db:migrate:batch1": "wrangler d1 execute gotab-cf-db --file migrations/batch1.sql",
+    "db:migrate:batch1:local": "wrangler d1 execute gotab-cf-db --local --file migrations/batch1.sql",
+    "db:migrate:batch2": "wrangler d1 execute gotab-cf-db --file migrations/batch2.sql",
+    "db:migrate:batch2:local": "wrangler d1 execute gotab-cf-db --local --file migrations/batch2.sql",
+    "account:create": "node scripts/create-account.mjs",
+    "test": "node tests/e2e.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260831.1",
+    "playwright": "^1.62.1",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.0.0"
+  }
+}

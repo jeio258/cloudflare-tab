@@ -1,0 +1,4 @@
+-- 批次 1 迁移：多账号与分享基础列
+ALTER TABLE users ADD COLUMN status INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE users ADD COLUMN share_id TEXT;
+ALTER TABLE users ADD COLUMN share_enabled INTEGER NOT NULL DEFAULT 0;

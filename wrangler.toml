@@ -1,0 +1,8 @@
+name = "gotab-cf"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-08-16"
+compatibility_flags = ["nodejs_compat"]
+
+d1_databases = [
+  { binding = "DB", database_name = "gotab-cf-db", database_id = "488ab844-50ff-4ca3-9839-30789b3e903a" }
+]
