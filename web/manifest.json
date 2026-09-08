@@ -1,0 +1,51 @@
+{
+    "name": "GoTab 新标签页",
+    "description": "GoTab 新标签页是一款简约美观、功能强大的浏览器起始主页，极致的个性化配置，满足您的各项要求，提高工作效率！支持创建/分享个人导航页，方便快捷的美化您的桌面，提升浏览器主页与 newtab 新标签页使用体验！",
+    "author": "dengxiwang",
+    "homepage_url": "https://www.gotab.cn",
+    "version": "2.1.0.10",
+    "manifest_version": 3,
+    "default_locale": "en",
+    "icons": {
+        "16": "icons/logo.png",
+        "32": "icons/logo.png",
+        "48": "icons/logo.png",
+        "128": "icons/logo.png"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": "icons/action_logo.png"
+    },
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "chrome_url_overrides": {
+        "newtab": "newtab.html"
+    },
+    "host_permissions": [
+        "https://smartbox.gtimg.cn/*",
+        "https://www.baidu.com/*",
+        "https://suggestion.baidu.com/*",
+        "*://*/*"
+    ],
+    "permissions": [
+        "bookmarks",
+        "search",
+        "history",
+        "tabs",
+        "storage",
+        "favicon"
+    ],
+    "web_accessible_resources": [
+        {
+            "matches": [
+                "*://*.baidu.com/*",
+                "*://*.gotab.cn/*"
+            ],
+            "resources": [
+                "/icons/logo.png"
+            ]
+        }
+    ]
+}

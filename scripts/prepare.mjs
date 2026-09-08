@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const src = join(root, '..', 'gotab-personal', 'web');
+const src = join(root, 'web');
 const dist = join(root, 'dist');
 
 rmSync(dist, { recursive: true, force: true });

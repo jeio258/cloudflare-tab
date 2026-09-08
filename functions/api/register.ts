@@ -34,7 +34,6 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
     sex: 0,
     birthday: '',
     user_type: 0,
-    created_at: '',
     status: 1,
     share_id: newId(),
     share_enabled: 0,

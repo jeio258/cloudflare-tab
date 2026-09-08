@@ -379,6 +379,17 @@ const authHdr = { authorization: token };
   eq('getShareData 未知返回 null', sh2b?.data === null, true);
 }
 
+// 7.7 站点配置端点（后台功能开关页依赖，原缺失返回 404）
+{
+  const r = await api.get(`${base}/api/getSiteConfig`);
+  const { status, body } = await okJson(r);
+  eq('getSiteConfig http 200', status, 200);
+  eq('getSiteConfig code', body?.code, 200);
+  eq('getSiteConfig 含 siteConfig', !!body?.data?.siteConfig, true);
+  eq('getSiteConfig uploadWallpaper=close', body?.data?.siteConfig?.uploadWallpaper, 'close');
+  eq('getSiteConfig cardPush=close', body?.data?.siteConfig?.cardPush, 'close');
+}
+
 // 8. 清理测试注册的普通用户（管理员删除）
 for (const uname of cleanupUsers) {
   try {
