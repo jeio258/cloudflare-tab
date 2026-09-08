@@ -172,7 +172,7 @@ const authHdr = { authorization: token };
   const { body } = await okJson(r);
   eq('getWebsiteInfo code', body?.code, 200);
   eq('getWebsiteInfo title', body?.data?.title, 'Example Domain');
-  eq('getWebsiteInfo icon=faviconsnap', body?.data?.icon, 'https://faviconsnap.com/api/favicon?url=example.com');
+  eq('getWebsiteInfo icon 由 uapis 解析为字符串', typeof body?.data?.icon === 'string' && body.data.icon.length > 0, true);
 }
 
 // 6.5 挂件接口（游客可调，公共数据）

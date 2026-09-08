@@ -11,20 +11,14 @@ const FALLBACK = [
 
 const pick = () => FALLBACK[Math.floor(Math.random() * FALLBACK.length)];
 
-export async function onRequestGet(context: { request: Request }) {
-  const url = new URL(context.request.url);
-  const types = (url.searchParams.get('types') || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => /^[a-l]$/.test(s));
-
+export async function onRequestGet() {
   let content = '';
   try {
-    const q = types.length ? types.map((t) => `c=${t}`).join('&') : '';
-    const j = (await fetchJson(`https://v1.hitokoto.cn/?encode=json${q ? `&${q}` : ''}`)) as {
-      hitokoto?: string;
+    const j = (await fetchJson('https://uapis.cn/api/v1/saying/random')) as {
+      content?: string;
+      item?: { content?: string };
     };
-    content = j?.hitokoto || pick();
+    content = j?.content || j?.item?.content || pick();
   } catch {
     content = pick();
   }
