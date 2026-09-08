@@ -208,6 +208,12 @@ const authHdr = { authorization: token };
   eq('yiyan code200', b3?.code, 200);
   eq('yiyan content 非空', typeof b3?.data?.content === 'string' && b3.data.content.length > 0, true);
 
+  // 前端实际为 POST（body 带 types），需保证 POST 也 200（修复 404）
+  const r3p = await api.post(`${base}/api/yiyan`, { data: { types: ['a', 'b'] } });
+  const { body: b3p } = await okJson(r3p);
+  eq('yiyan POST code200', b3p?.code, 200);
+  eq('yiyan POST content 非空', typeof b3p?.data?.content === 'string' && b3p.data.content.length > 0, true);
+
   const r4 = await api.get(`${base}/api/exchange-rate`);
   const { body: b4 } = await okJson(r4);
   const rates = b4?.data?.rates || {};

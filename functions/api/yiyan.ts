@@ -11,16 +11,22 @@ const FALLBACK = [
 
 const pick = () => FALLBACK[Math.floor(Math.random() * FALLBACK.length)];
 
-export async function onRequestGet() {
-  let content = '';
+async function say(): Promise<string> {
   try {
     const j = (await fetchJson('https://uapis.cn/api/v1/saying/random')) as {
       content?: string;
       item?: { content?: string };
     };
-    content = j?.content || j?.item?.content || pick();
+    return j?.content || j?.item?.content || pick();
   } catch {
-    content = pick();
+    return pick();
   }
-  return ok({ content });
+}
+
+export async function onRequestGet() {
+  return ok({ content: await say() });
+}
+
+export async function onRequestPost() {
+  return ok({ content: await say() });
 }
