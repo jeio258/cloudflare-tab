@@ -1,0 +1,83 @@
+// 找回密码表单适配 headless 验证：注入「原密码」输入并随请求提交
+import { chromium, request as playwrightRequest } from 'playwright';
+
+const base = process.env.GOTAB_BASE_URL || 'http://127.0.0.1:8799';
+const CODE = process.env.GOTAB_REGISTER_CODE || '123456';
+const failures = [];
+const log = (...a) => console.log(...a);
+const check = (name, ok) => { log((ok ? '[OK] ' : '[FAIL] ') + name); if (!ok) failures.push(name); };
+
+const api = await playwrightRequest.newContext();
+const uname = 'fp' + (Date.now() % 1000000);
+const email = uname + '@test.local';
+const oldPw = 'orig123456';
+{
+  const r = await api.post(base + '/api/register', {
+    data: { username: uname, password: oldPw, email, emailCode: CODE },
+  });
+  const b = await r.json().catch(() => null);
+  check('注册一次性用户 ' + uname, b?.code === 200);
+}
+
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+const consoleErrors = [];
+page.on('pageerror', (e) => consoleErrors.push(String(e).slice(0, 200)));
+page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 200)); });
+
+let capturedBody = null;
+page.on('request', (req) => {
+  if (req.url().includes('/api/findPassword') && req.method() === 'POST') capturedBody = req.postData();
+});
+
+await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 30000 });
+await page.waitForTimeout(5000);
+
+await page.locator('.ant-avatar').first().click({ force: true }).catch(() => {});
+await page.waitForTimeout(1200);
+await page.getByText('登录/注册').first().click({ force: true }).catch(() => {});
+await page.waitForTimeout(1500);
+await page.getByText('找回密码').first().click({ force: true }).catch(() => {});
+await page.waitForTimeout(1500);
+
+let hasField = false;
+for (let i = 0; i < 12; i++) {
+  hasField = (await page.locator('#gotab-oldPassword').count()) > 0;
+  if (hasField) break;
+  await page.waitForTimeout(300);
+}
+check('找回表单出现注入的原密码输入', hasField);
+await page.screenshot({ path: '/tmp/findpassword-form.png' }).catch(() => {});
+
+if (hasField) {
+  await page.fill('#findPassword-form_username', uname);
+  await page.fill('#findPassword-form_email', email);
+  await page.fill('#findPassword-form_emailCode', CODE);
+  await page.fill('#gotab-oldPassword', oldPw);
+  await page.fill('#findPassword-form_newPassword', 'newpass9');
+  await page.fill('#findPassword-form_confirmPassword', 'newpass9');
+
+  const [resp] = await Promise.all([
+    page.waitForResponse((r) => r.url().includes('/api/findPassword') && r.request().method() === 'POST', { timeout: 15000 }).catch(() => null),
+    page.getByRole('button', { name: '找回密码' }).click({ force: true }).catch(() => {}),
+  ]);
+  const body = resp ? await resp.json().catch(() => null) : null;
+  log('captured request body: ' + capturedBody);
+  log('response: ' + JSON.stringify(body));
+
+  check('请求体包含 oldPassword', !!capturedBody && capturedBody.includes('oldPassword'));
+  check('请求体 oldPassword 值正确', !!capturedBody && capturedBody.includes(oldPw));
+  check('找回密码提交成功 code=200', body?.code === 200);
+
+  const lr = await api.post(base + '/api/login', { data: { username: uname, password: 'newpass9' } });
+  const lb = await lr.json().catch(() => null);
+  check('重置后新密码可登录', lb?.code === 200);
+}
+
+check('无 console 报错', consoleErrors.length === 0);
+if (consoleErrors.length) log('console errors: ' + JSON.stringify(consoleErrors.slice(0, 5)));
+
+await browser.close();
+await api.dispose();
+log(failures.length ? ('FAILURES: ' + failures.join(', ')) : 'ALL PASSED');
+process.exit(failures.length ? 1 : 0);
