@@ -20,9 +20,14 @@ export const upsertCurrent = (env: Env, data: string, created_at: string) =>
 export const applySnapshot = async (env: Env, id: string): Promise<boolean> => {
   const row = await env.DB.prepare('select * from default_data_history where id = ?').bind(id).first<SnapshotRow>();
   if (!row) return false;
-  await env.DB.prepare('update default_data_history set enabled = 0').run();
-  await env.DB.prepare('update default_data_history set enabled = 1 where id = ?').bind(id).run();
-  await upsertCurrent(env, row.data, row.created_at);
+  await env.DB.batch([
+    env.DB.prepare('update default_data_history set enabled = 0'),
+    env.DB.prepare('update default_data_history set enabled = 1 where id = ?').bind(id),
+    env.DB.prepare(
+      `insert into default_data (id, data, created_at) values (1, ?, ?)
+       on conflict(id) do update set data = excluded.data, created_at = excluded.created_at`
+    ).bind(row.data, row.created_at),
+  ]);
   return true;
 };
 

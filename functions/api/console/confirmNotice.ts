@@ -16,7 +16,10 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
   if (!id) return fail(400, '参数错误');
   const row = await context.env.DB.prepare('select id from notices where id = ?').bind(id).first<{ id: string }>();
   if (!row) return fail(400, '公告不存在');
-  await context.env.DB.prepare('update notices set status = 0').run();
-  await context.env.DB.prepare('update notices set status = 1 where id = ?').bind(id).run();
+  const db = context.env.DB;
+  await db.batch([
+    db.prepare('update notices set status = 0'),
+    db.prepare('update notices set status = 1 where id = ?').bind(id),
+  ]);
   return ok(null, '公告已发布');
 }

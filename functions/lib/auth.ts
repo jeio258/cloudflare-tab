@@ -9,10 +9,12 @@ const dec = new TextDecoder();
 
 export const newId = () => randomUUID();
 
+const toHex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+
 export async function hashPassword(pw: string): Promise<string> {
   const salt = randomBytes(16);
   const dk = await scryptAsync(pw, salt, 32);
-  return `${salt.toString('hex')}:${dk.toString('hex')}`;
+  return `${toHex(salt)}:${toHex(dk)}`;
 }
 
 export async function verifyPassword(pw: string, stored: string): Promise<boolean> {
@@ -37,7 +39,10 @@ const b64urlDecode = (s: string): Uint8Array => {
   return Uint8Array.from(bin, (c) => c.charCodeAt(0));
 };
 
-const secretOf = (env: Env) => (env.JWT_SECRET || 'gotab-dev-secret').padEnd(32, 'x');
+const secretOf = (env: Env) => {
+  if (!env.JWT_SECRET) throw new Error('JWT_SECRET 未配置');
+  return env.JWT_SECRET.padEnd(32, 'x');
+};
 
 async function hmacKey(env: Env) {
   return crypto.subtle.importKey('raw', enc.encode(secretOf(env)), { name: 'HMAC', hash: 'SHA-256' }, false, [

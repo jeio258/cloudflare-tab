@@ -3,6 +3,9 @@ import { getUserData, upsertUserData } from '../../lib/db';
 import { authUser } from '../../lib/auth';
 import type { Env } from '../../lib/http';
 
+// 每账号云快照上限（字节，UTF-16 长度近似），防超大 JSON 滥用存储
+const MAX_DATA_BYTES = 262144;
+
 export async function onRequestPost(context: { request: Request; env: Env }) {
   const user = await authUser(context.env, context.request);
   if (!user) return fail(401, '登录已失效');
@@ -19,6 +22,8 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
   if (data === undefined || data === null || !Number.isFinite(timestamp)) {
     return fail(400, '参数错误');
   }
+  const payload = JSON.stringify(data);
+  if (payload.length > MAX_DATA_BYTES) return fail(400, '数据过大，无法保存');
 
   const row = await getUserData(context.env, user.id);
   const stored = row ? Number(row.timestamp) : 0;
@@ -28,6 +33,6 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
   }
   // 单调递增：新时间戳必须严格大于已存值
   const newTs = Math.max(timestamp, stored + 1);
-  await upsertUserData(context.env, user.id, JSON.stringify(data), newTs);
+  await upsertUserData(context.env, user.id, payload, newTs);
   return ok({ timestamp: newTs });
 }

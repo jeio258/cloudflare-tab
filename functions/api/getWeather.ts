@@ -16,6 +16,7 @@ export async function onRequestGet(context: { request: Request }) {
   }
 
   try {
+    // 契约：前端按 data.data 读取天气对象（外层为统一响应包装，故此处再包一层）
     const payload = await weatherOf(name);
     return ok({ data: payload });
   } catch {

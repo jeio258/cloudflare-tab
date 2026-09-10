@@ -13,11 +13,15 @@
     "db:migrate:batch1:local": "wrangler d1 execute gotab-cf-db --local --file migrations/batch1.sql",
     "db:migrate:batch2": "wrangler d1 execute gotab-cf-db --file migrations/batch2.sql",
     "db:migrate:batch2:local": "wrangler d1 execute gotab-cf-db --local --file migrations/batch2.sql",
+    "db:migrate:batch3": "wrangler d1 execute gotab-cf-db --file migrations/batch3.sql",
+    "db:migrate:batch3:local": "wrangler d1 execute gotab-cf-db --local --file migrations/batch3.sql",
     "account:create": "node scripts/create-account.mjs",
+    "typecheck": "tsc --noEmit",
     "test": "node tests/e2e.mjs"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260831.1",
+    "@types/node": "^22.20.2",
     "playwright": "^1.62.1",
     "typescript": "^5.8.3",
     "wrangler": "^4.0.0"

@@ -76,13 +76,13 @@ function build(w: UWeather, city: string) {
     date: d.date || '',
     high_temperature: fmtTemp(d.temp_max),
     low_temperature: fmtTemp(d.temp_min),
-    weather_icon_id: iconByText(d.weather_day),
+    weather_icon_id: iconByText(d.weather_day || ''),
     condition: d.weather_day || d.weather_night || '',
   }));
   const hourly_forecast = (w.hourly_forecast || []).slice(0, 24).map((h) => ({
     hour: Number(String(h.time || '').slice(11, 13) || 0),
     temperature: fmtTemp(h.temperature),
-    weather_icon_id: iconByText(h.weather),
+    weather_icon_id: iconByText(h.weather || ''),
   }));
 
   const today = forecast_list[0];
@@ -108,6 +108,7 @@ function build(w: UWeather, city: string) {
     low_temperature: today ? today.low_temperature : fmtTemp(w.temp_min),
     day_condition: todayDay || w.weather || '',
     night_condition: todayNight || w.weather || '',
+    // 契约：字段名沿用前端读取口径（day→dat 为历史拼写，勿改）
     dat_high_temperature: today ? today.high_temperature : '',
     dat_low_temperature: today ? today.low_temperature : '',
     forecast_list,

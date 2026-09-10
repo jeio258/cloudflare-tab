@@ -1,6 +1,8 @@
 import { chromium } from 'playwright';
 
-const base = 'http://127.0.0.1:8799';
+const base = process.env.GOTAB_BASE_URL || 'http://127.0.0.1:8799';
+const USER = process.env.GOTAB_USER || 'test@gotab.local';
+const PASS = process.env.GOTAB_PASS || 'test123456';
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 page.on('pageerror', (e) => console.log('[pageerror]', String(e).slice(0, 200)));
@@ -41,8 +43,8 @@ await avatar.click({ force: true }).catch(() => {});
 await page.waitForTimeout(1200);
 await page.getByText('登录/注册').first().click().catch(() => {});
 await page.waitForTimeout(1500);
-await page.locator('#login-form_username').fill('test@gotab.local');
-await page.locator('#login-form_password').fill('test123456');
+await page.locator('#login-form_username').fill(USER);
+await page.locator('#login-form_password').fill(PASS);
 await Promise.all([
   page.waitForResponse((r) => r.url().endsWith('/api/login') && r.request().method() === 'POST', { timeout: 10000 }),
   page.getByRole('button', { name: '登 录' }).click(),

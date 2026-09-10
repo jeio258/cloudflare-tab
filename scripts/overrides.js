@@ -12,7 +12,7 @@
   const visible = (el) => el.offsetParent !== null && el.style.display !== 'none';
   const txt = (el) => (el.textContent || '').trim();
 
-  function scan() {
+  function scanImpl() {
     // 抽屉/菜单项
     document
       .querySelectorAll('.ant-menu-item, .ant-menu-submenu-title, li[role="menuitem"]')
@@ -46,6 +46,15 @@
       scan();
     });
   };
+
+  // 页面结构变化时静默降级，避免影响应用
+  function scan() {
+    try {
+      scanImpl();
+    } catch {
+      /* noop */
+    }
+  }
 
   scan();
   new MutationObserver(requestScan).observe(document.documentElement, { childList: true, subtree: true });

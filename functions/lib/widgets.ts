@@ -13,8 +13,14 @@ export async function fetchJson(url: string, init?: RequestInit): Promise<unknow
       signal: ctrl.signal,
       redirect: 'follow',
     });
-    if (!resp.ok) throw new Error(`http ${resp.status}`);
+    if (!resp.ok) {
+      console.error(`[widgets] upstream ${resp.status} ${url}`);
+      throw new Error(`http ${resp.status}`);
+    }
     return await resp.json();
+  } catch (e) {
+    console.error(`[widgets] fetch failed ${url}: ${(e as Error)?.message || String(e)}`);
+    throw e;
   } finally {
     clearTimeout(timer);
   }

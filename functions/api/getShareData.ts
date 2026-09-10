@@ -11,6 +11,7 @@ async function resolve(env: Env, path: string) {
     .first<UserRow>();
   if (!user) return ok(null);
   if (Number(user.status) === 0) return ok(3);
+  if (Number(user.share_enabled) !== 1) return ok(2);
   const row = await getUserData(env, user.id);
   if (!row) return ok(null);
   try {

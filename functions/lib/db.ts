@@ -25,7 +25,7 @@ export const getUserByUsername = (env: Env, username: string) =>
 export const getUserById = (env: Env, id: string) =>
   env.DB.prepare('select * from users where id = ?').bind(id).first<UserRow>();
 
-export const insertUser = (env: Env, u: UserRow) =>
+export const insertUser = (env: Env, u: Omit<UserRow, 'created_at'>) =>
   env.DB.prepare(
     `insert into users (id, username, password, nickname, email, phone, avatar, sex, birthday, user_type, status, share_id, share_enabled)
      values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`

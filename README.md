@@ -163,14 +163,16 @@ gotab-cf（一个 Cloudflare Pages 项目，自动域名 *.pages.dev）
 | `npm run prepare` | 生成 `dist/`（模板替换/站点配置/overrides/搜索URL替换/拷贝 functions） |
 | `npm run dev` | 本地预览（127.0.0.1:8799，含本地 D1） |
 | `npm run deploy` | 部署到 Pages 生产分支（gotab-cf.pages.dev） |
-| `npm run db:migrate` / `db:migrate:local` | D1 基础建表（远程/本地） |
+| `npm run db:migrate` / `db:migrate:local` | D1 **全新库完整建表**（幂等，含全部列/表/索引；远程/本地） |
+| `npm run typecheck` | TS 类型检查（`tsc --noEmit`） |
 | `npm run db:migrate:batch1`…`batch3`（+`:local`） | 各期迁移 |
 | `npm run account:create` | 建号/改密（加 `--remote` 写远程） |
 | `npm test` | 运行 `tests/e2e.mjs`（需先起本地预览；远程用环境变量，见下） |
 
 ### 测试
 ```bash
-# 本地
+# 本地（首次需建本地 D1 完整 schema）
+npm run db:migrate:local
 wrangler pages dev --port 8799 &
 node tests/e2e.mjs
 # 远程
@@ -213,3 +215,8 @@ schema.sql               D1 基础 DDL
 - 上传类（R2）、绑定邮箱（SMTP/QQ）、称号审核等未做
 - 天气 AQI/tips 字段缺失（免费源限制）
 - robots/sitemap 指向官方域名，绑定自有域名后需改写
+- 第三方 API 例外：汇率用 `api.frankfurter.app`、搜索联想用百度 `sugrec`（经同源代理）；其余均走 uapis.cn
+- 找回密码现要求**原密码**（安全收敛）；无邮件服务前不宜作为"忘记密码"使用
+- 分享页需 `share_enabled=1` 才可读（未开启返回 `2`＝已停止分享），避免隐私越权
+- 登录/找回等端点未内置速率限制，建议在 Cloudflare 侧配置 Rate Limiting 规则
+- 旧库升级：全新库用 `db:migrate`；历史库按 `migrations/batch1~3` 增量执行

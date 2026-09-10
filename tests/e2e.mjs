@@ -85,8 +85,13 @@ const cleanupUsers = [];
   });
   const { body: b5 } = await okJson(r5);
   eq('findPwdEmailCode 不匹配', b5?.code, 400);
-  const r6 = await api.post(`${base}/api/findPassword`, {
+  const r6bad = await api.post(`${base}/api/findPassword`, {
     data: { username: uname, email, emailCode: CODE, newPassword: 'newpass1', confirmPassword: 'newpass1' },
+  });
+  const { body: b6bad } = await okJson(r6bad);
+  eq('findPassword 缺原密码被拒', b6bad?.code, 400);
+  const r6 = await api.post(`${base}/api/findPassword`, {
+    data: { username: uname, email, emailCode: CODE, oldPassword: 'pass123', newPassword: 'newpass1', confirmPassword: 'newpass1' },
   });
   const { body: b6 } = await okJson(r6);
   eq('findPassword 重置成功', b6?.code, 200);
@@ -120,6 +125,14 @@ const authHdr = { authorization: token };
   });
   const { body: b2 } = await okJson(r2);
   eq('push first ts >= ts1', typeof b2?.data?.timestamp === 'number' && b2.data.timestamp >= ts1, true);
+
+  // 数据上限：超大快照被拒绝（P0-4）
+  const rBig = await api.post(`${base}/api/user/push`, {
+    headers: authHdr,
+    data: { data: { blob: 'x'.repeat(300000) }, timestamp: ts1 + 5, baseTimestamp: 0 },
+  });
+  const { body: bBig } = await okJson(rBig);
+  eq('push 超大数据被拒', bBig?.code, 400);
 
   // 冲突：baseTimestamp 取一个肯定小于已存的数
   const r3 = await api.post(`${base}/api/user/push`, {
@@ -379,7 +392,7 @@ const authHdr = { authorization: token };
   // 分享页：getShareData(管理员 username 或 share_id) 返回其云数据
   const sh1 = await api.get(`${base}/api/getShareData?path=${encodeURIComponent(USER)}`);
   const sh1b = (await okJson(sh1)).body;
-  eq('getShareData 命中返回 shareData', !!sh1b?.data?.shareData, true);
+  eq('getShareData 未开启分享返回 2', sh1b?.data, 2);
   const sh2 = await api.get(`${base}/api/getShareData?path=ghost_not_exist`);
   const sh2b = (await okJson(sh2)).body;
   eq('getShareData 未知返回 null', sh2b?.data === null, true);
