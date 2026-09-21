@@ -1,4 +1,4 @@
-import { cachedJson, fetchJson } from './widgets';
+import { cachedJson, fetchJson } from './upstream';
 
 interface HotItem {
   title: string;

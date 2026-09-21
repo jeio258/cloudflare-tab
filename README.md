@@ -183,7 +183,7 @@ GOTAB_BASE_URL=https://gotab-cf.pages.dev GOTAB_USER=<账号> GOTAB_PASS=<密码
 ### 关键目录
 ```
 functions/api/*          接口路由（含 [[path]].ts 兜底）
-functions/lib/*          auth/db/http/admin/account + 挂件/默认主页共享库
+functions/lib/*          handler(统一鉴权/body/错误)/auth/db/account/contract + 领域库(weather/hot/cities/defaultData/upstream)
 migrations/batch*.sql    分阶段 DDL
 scripts/prepare.mjs      dist 生成
 scripts/overrides.{css,js}  界面隐藏补丁

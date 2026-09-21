@@ -1,6 +1,6 @@
-import { ok } from '../lib/http';
 import { cityOptions } from '../lib/cities';
+import { defineHandler } from '../lib/handler';
 
-export async function onRequestGet() {
-  return ok(cityOptions);
-}
+export const onRequestGet = defineHandler({
+  run: async () => cityOptions,
+});

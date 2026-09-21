@@ -1,5 +1,5 @@
-import { ok } from '../lib/http';
-import { cachedJson, fetchJson } from '../lib/widgets';
+import { defineHandler } from '../lib/handler';
+import { cachedJson, fetchJson } from '../lib/upstream';
 
 const CODES = ['USD', 'EUR', 'GBP', 'JPY', 'HKD', 'AUD', 'CAD', 'CHF', 'NZD'];
 
@@ -17,21 +17,23 @@ const FALLBACK: Record<string, number> = {
   NZD: 4.32,
 };
 
-export async function onRequestGet() {
-  const rates = await cachedJson<Record<string, number>>('fx', 10 * 60_000, async () => {
-    try {
-      const j = (await fetchJson(`https://api.frankfurter.app/latest?from=CNY&to=${CODES.join(',')}`)) as {
-        rates?: Record<string, number>;
-      };
-      const out: Record<string, number> = { CNY: 1 };
-      for (const code of CODES) {
-        const v = j?.rates?.[code];
-        out[code] = v && v > 0 ? Math.round((1 / v) * 1e6) / 1e6 : FALLBACK[code];
+export const onRequestGet = defineHandler({
+  run: async () => {
+    const rates = await cachedJson<Record<string, number>>('fx', 10 * 60_000, async () => {
+      try {
+        const j = (await fetchJson(`https://api.frankfurter.app/latest?from=CNY&to=${CODES.join(',')}`)) as {
+          rates?: Record<string, number>;
+        };
+        const out: Record<string, number> = { CNY: 1 };
+        for (const code of CODES) {
+          const v = j?.rates?.[code];
+          out[code] = v && v > 0 ? Math.round((1 / v) * 1e6) / 1e6 : FALLBACK[code];
+        }
+        return out;
+      } catch {
+        return { ...FALLBACK };
       }
-      return out;
-    } catch {
-      return { ...FALLBACK };
-    }
-  });
-  return ok({ rates });
-}
+    });
+    return { rates };
+  },
+});

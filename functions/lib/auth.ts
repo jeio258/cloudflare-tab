@@ -2,6 +2,7 @@ import { randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import type { Env } from './http';
 import { getUserById } from './db';
+import type { UserRow } from './db';
 
 const scryptAsync = promisify(scrypt) as (p: string, s: Buffer, l: number) => Promise<Buffer>;
 const enc = new TextEncoder();
@@ -85,3 +86,9 @@ export async function authUser(env: Env, request: Request) {
   if (!uid) return null;
   return getUserById(env, uid);
 }
+
+// 校验管理员：返回用户行或 null
+export const requireAdmin = async (env: Env, request: Request): Promise<UserRow | null> => {
+  const user = await authUser(env, request);
+  return user && Number(user.user_type) === 1 ? user : null;
+};

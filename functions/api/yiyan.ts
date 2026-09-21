@@ -1,5 +1,5 @@
-import { ok } from '../lib/http';
-import { fetchJson } from '../lib/widgets';
+import { defineHandler } from '../lib/handler';
+import { fetchJson } from '../lib/upstream';
 
 const FALLBACK = [
   '花有重开日，人无再少年。',
@@ -23,10 +23,9 @@ async function say(): Promise<string> {
   }
 }
 
-export async function onRequestGet() {
-  return ok({ content: await say() });
-}
+const handler = defineHandler({
+  run: async () => ({ content: await say() }),
+});
 
-export async function onRequestPost() {
-  return ok({ content: await say() });
-}
+export const onRequestGet = handler;
+export const onRequestPost = handler;

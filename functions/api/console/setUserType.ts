@@ -1,22 +1,17 @@
-import { ok, fail } from '../../lib/http';
-import { requireAdmin } from '../../lib/admin';
-import type { Env } from '../../lib/http';
+import { defineHandler } from '../../lib/handler';
+import { ApiError } from '../../lib/http';
 
-export async function onRequestPost(context: { request: Request; env: Env }) {
-  const admin = await requireAdmin(context.env, context.request);
-  if (!admin) return fail(403, '无权限');
+export const onRequestPost = defineHandler({
+  auth: 'admin',
+  body: true,
+  msg: '已更新',
+  run: async ({ env, admin, body }) => {
+    const userId = String(body.userId || '');
+    const type = Number(body.type ?? -1);
+    if (!userId || (type !== 0 && type !== 1)) throw new ApiError(400, '参数错误');
+    if (userId === admin!.id) throw new ApiError(400, '不能修改自己的管理员身份');
 
-  let body: Record<string, unknown>;
-  try {
-    body = (await context.request.json()) as Record<string, unknown>;
-  } catch {
-    return fail(400, '参数错误');
-  }
-  const userId = String(body.userId || '');
-  const type = Number(body.type ?? -1);
-  if (!userId || (type !== 0 && type !== 1)) return fail(400, '参数错误');
-  if (userId === admin.id) return fail(400, '不能修改自己的管理员身份');
-
-  await context.env.DB.prepare('update users set user_type = ? where id = ?').bind(type, userId).run();
-  return ok(null, '已更新');
-}
+    await env.DB.prepare('update users set user_type = ? where id = ?').bind(type, userId).run();
+    return null;
+  },
+});

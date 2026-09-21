@@ -1,6 +1,5 @@
-import { ok } from '../../lib/http';
-import type { Env } from '../../lib/http';
+import { defineHandler } from '../../lib/handler';
 
-export async function onRequestGet(_context: { request: Request; env: Env }) {
-  return ok(null);
-}
+export const onRequestGet = defineHandler({
+  run: async () => null,
+});

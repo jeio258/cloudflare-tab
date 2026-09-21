@@ -1,4 +1,4 @@
-import { cachedJson, fetchJson } from './widgets';
+import { cachedJson, fetchJson } from './upstream';
 
 // 中国天气网 3 位图标码 -> 项目内置 /images/w{id}.png
 const ICON_BY_CODE: Record<string, string> = {
