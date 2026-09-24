@@ -1,8 +1,5 @@
 import { defineHandler } from '../lib/handler';
-import { fetchJson } from '../lib/upstream';
-
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
+import { fetchJson, UA } from '../lib/upstream';
 
 // JSONP 同源代理：搜索联想转百度 sugrec，返回 cb({g:[{q}]})
 export const onRequestGet = defineHandler({
