@@ -50,8 +50,23 @@ html = html.replace(
 );
 writeFileSync(indexPath, html);
 
-// 静态资源长缓存（哈希文件名，内容不变）
-writeFileSync(join(dist, '_headers'), '/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n');
+// 静态资源长缓存 + 安全响应头
+// 静态资源：哈希文件名，内容不变
+// 安全头：仅加入零功能风险项；CSP 因前端支持用户自定义图标/壁纸源未启用（见 dev-log 待跟进）
+writeFileSync(
+  join(dist, '_headers'),
+  [
+    '/assets/*',
+    '  Cache-Control: public, max-age=31536000, immutable',
+    '',
+    '/*',
+    '  X-Content-Type-Options: nosniff',
+    '  X-Frame-Options: SAMEORIGIN',
+    '  Referrer-Policy: strict-origin-when-cross-origin',
+    '  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()',
+    '',
+  ].join('\n')
+);
 
 // 搜索联想同源化：替换前端直连百度 sugrec 的 URL 为 /api/search-suggest
 const SUG_SRC = 'https://www.baidu.com/sugrec?prod=pc&from=pc_web&wd=';
