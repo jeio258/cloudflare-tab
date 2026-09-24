@@ -1,6 +1,11 @@
 .avatar-uploader {
   display: none !important;
 }
+/* 隐藏底部官方品牌区（他方 ICP 备案号 + 官方推广），仅隐藏 fixed 底部容器，不影响用户卡片 */
+div:has(> a[href="https://beian.miit.gov.cn"]) {
+  display: none !important;
+}
+
 /* 移动端触控热区：触屏设备将 flex 链接命中区扩展至 44px（透明伪元素，视觉零变化） */
 @media (pointer: coarse) {
   a.flex.items-center {
