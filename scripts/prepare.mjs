@@ -54,6 +54,17 @@ if (existsSync(robotsPath)) {
   writeFileSync(robotsPath, robots);
 }
 
+// 首屏体验：预设背景色 + 预加载默认壁纸，缓解 CSR 首帧白屏
+// 背景色为默认壁纸主色调，JS 挂载后壁纸会覆盖，不影响最终视觉
+html = html.replace(
+  '</title>',
+  '</title>\n    <link rel="preload" as="image" href="/images/wallpaper.webp" fetchpriority="high" />'
+);
+html = html.replace(
+  '<meta name="color-scheme" content="light dark">',
+  '<meta name="color-scheme" content="light dark">\n    <style>html{background:#12151a}</style>'
+);
+
 // 死入口清理：注入补丁 CSS/JS
 cpSync(join(root, 'scripts', 'overrides.css'), join(dist, 'overrides.css'));
 cpSync(join(root, 'scripts', 'overrides.js'), join(dist, 'overrides.js'));
@@ -70,6 +81,9 @@ writeFileSync(
   join(dist, '_headers'),
   [
     '/assets/*',
+    '  Cache-Control: public, max-age=31536000, immutable',
+    '',
+    '/images/*',
     '  Cache-Control: public, max-age=31536000, immutable',
     '',
     '/*',
