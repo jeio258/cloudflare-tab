@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -40,6 +40,19 @@ const siteConfigJs =
     .join('\n') +
   '\n};\n';
 writeFileSync(join(dist, 'siteConfig.js'), siteConfigJs);
+
+// sitemap/robots 域名同源化：替换官方域名，并剔除已剔除的扩展专属页面
+// 正式域名优先取部署注入的 CF_PAGES_URL，其次本地默认值
+const SITE_ORIGIN = (process.env.CF_PAGES_URL || 'https://gotab-cf.pages.dev').replace(/\/+$/, '');
+
+const robotsPath = join(dist, 'robots.txt');
+if (existsSync(robotsPath)) {
+  const robots = readFileSync(robotsPath, 'utf8').replace(
+    /^Sitemap:\s*\S+$/m,
+    `Sitemap: ${SITE_ORIGIN}/sitemap.xml`
+  );
+  writeFileSync(robotsPath, robots);
+}
 
 // 死入口清理：注入补丁 CSS/JS
 cpSync(join(root, 'scripts', 'overrides.css'), join(dist, 'overrides.css'));
@@ -110,6 +123,19 @@ for (const f of readdirSync(join(dist, 'assets')).filter((x) => x.endsWith('.js'
   }
 }
 if (brandPatched === 0) console.warn('[prepare] 未命中作者品牌字符串，请检查前端产物');
+
+// sitemap：替换官方域名，剔除扩展专属页面（/newtab、/popup 已不在部署产物中）
+const sitemapPath = join(dist, 'sitemap.xml');
+if (existsSync(sitemapPath)) {
+  let sitemap = readFileSync(sitemapPath, 'utf8');
+  sitemap = sitemap
+    .replace(/<url>(?:(?!<\/url>)[\s\S])*?<\/url>/g, (block) =>
+      /<loc>[^<]*\/(newtab|popup)<\/loc>/.test(block) ? '' : block
+    )
+    .split('https://web.gotab.cn')
+    .join(SITE_ORIGIN);
+  writeFileSync(sitemapPath, sitemap);
+}
 
 // 拷贝 Pages Functions
 cpSync(join(root, 'functions'), join(dist, 'functions'), { recursive: true });
