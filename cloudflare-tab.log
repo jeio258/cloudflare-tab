@@ -55,3 +55,52 @@
 
 **环境备注**：审计期间曾以 `pgrep -f` 误伤同 shell 进程与 Firedre 的 wrangler dev
 wrapper（非本轮范围，如需可自行重启）；最终 8799/8801 端口已全部释放。
+
+---
+
+## 2026-09-24 | 性能方案全面证伪 + 合规隐藏修复（S2/R3-1）
+
+**项**：R2 性能优化（方案作废）+ S2 底部官方品牌区隐藏（已完成）
+
+### 一、性能方案逐项证伪（用户裁决：放弃性能，转确定收益项）
+
+| 原方案 | 取证结论 | 判定 |
+|---|---|---|
+| S1：main.js 未 minified，可压缩 | 空白字符仅 **1.7%**；最长行 **497KB**（555 行是长行切分非美化）；esbuild `--minify` 后 raw 3602→**3664KB**、br 889→**911KB**（**变大**） | ❌ 证伪，作废 |
+| O2：移除 myErrorPage modulepreload，省 194KB | `myErrorPage-duSnGROQ.js` 被 **77 个文件引用**，main.js 静态 `import{...约300个符号...}` → **核心共享库，必须立即加载** | ❌ 证伪，作废 |
+| O3：拆 main.js | `web/` **无源码、无构建配置**（无 src/、无 vite.config、无 package.json），仅构建产物；3.6MB 单文件含 1 处 export / 107 处 import，逆向切分必破坏功能 | ❌ 不可行 |
+| O1/O4/O5 | 仅剩微优化空间（O1 约 8KB） | ⏸ 归档 |
+
+**结构性事实**：assets 共 51 文件 5.8MB，**81% 体积（4.3MB raw）集中在 2 个被 55–77 次引用的巨型共享库**（main-DDZCDGo8.js 3.6MB / myErrorPage-duSnGROQ.js 671KB），系 rolldown 自动分包结果，产物层无法安全拆分。零入边死代码仅 11KB。
+
+**首屏关键路径实测**：50 个 modulepreload 文件，br 合计 **1334KB**（main 889KB + myErrorPage 194KB = 81%）。
+
+**方法论失误（三次，需正视）**：
+1. S1 用 `wc -l` 目测 554 行 → 断言「未压缩」，未做空白占比统计；
+2. O2 看文件名 `myErrorPage` → 断言「错误页专用」，未做入边统计；
+3. O3 断言「解冻源码即可」→ 未先查 `web/` 是否含源码。
+
+**修正做法**：后续性能方案先跑「入边统计 + 体积分布 + 实测量化」，再提方案；动手前先做 30 秒对照实验。
+
+**结论**：性能瓶颈为上游产物结构性限制，**Lighthouse ≥90 在现有产物下不可达**（即使做完 O1/O4/O5，预估仅 40–50）。用户裁决：放弃性能优化，转确定收益项。
+
+### 二、S2 底部官方品牌区隐藏（已完成，提交 `4f70e40`）
+
+**改动**：`scripts/overrides.css` 新增
+`div:has(> a[href="https://beian.miit.gov.cn"]) { display: none !important; }`
+
+**原因**：自有部署展示他方 ICP 备案号（豫ICP备2023009053号-6）与官方推广（雨云）存在合规风险。用户裁决「隐藏」。
+
+**关键坑（已规避）**：`a[href="https://www.rainyun.com/gotab_"]` 命中 **2 个**——除底部推广外，还有一个是**用户自己的卡片**（`id=13`，用户数据）。改用容器选择器 `div:has(> beian链接)` 精确命中 `fixed bottom-3` 容器，用户卡片（`inCard: true`）不受影响。
+
+**验证（三项全过）**：
+- 正向：e2e **84/84 ALL PASSED**；
+- 负向：底部 60px 可见文本 = `[]`（原为备案号+|+雨云）；用户卡片雨云链接仍可见；无横向溢出；`CSS.supports('selector(div:has(> a))')` = true；
+- 灵敏度：**临时回滚规则后底部文本重现** `["豫ICP备2023009053号-6","|","本网站由雨云提供计算服务"]`，恢复后为空 → 证明测试有效，非静默通过。
+
+**回滚**：`git revert 4f70e40` + `npm run prepare`。
+
+**待跟进**：`a[href="https://www.gotab.cn"]`（「欢迎使用官方网站」）与
+`a[href="https://www.gotab.cn/changelog/gotab.html"]`（「版本日志功能迭代记录」）
+仍在右侧菜单内，属同一合规范畴，待下一轮处理。注意 `web.gotab.cn` 被用作
+API 基础 URL 常量（`Fp()` 与 sourceStore 接口），**不可全局替换**。
