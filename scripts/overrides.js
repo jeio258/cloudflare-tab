@@ -133,6 +133,43 @@
     /* noop */
   }
 
+  // ===== 无障碍：为无文本的图标按钮补 aria-label（提升 a11y，零视觉变化）=====
+  const ICON_LABEL = {
+    'anticon-setting': '设置',
+    'anticon-user': '用户中心',
+    'anticon-appstore': '功能面板',
+    'anticon-edit': '编辑',
+    'anticon-like': '点赞',
+    'anticon-right': '下一页',
+    'anticon-left': '上一页',
+    'anticon-menu': '菜单',
+    'anticon-close': '关闭',
+    'anticon-plus': '添加',
+    'anticon-search': '搜索',
+    'anticon-upload': '上传',
+  };
+
+  function fixIconButtonLabels() {
+    document
+      .querySelectorAll('button.ant-btn, button[class*="ant-btn"], button[class*="icon"]')
+      .forEach((btn) => {
+        if (btn.getAttribute('aria-label') || btn.getAttribute('title')) return;
+        if (txt(btn)) return;
+        const icon = btn.querySelector('[class*="anticon-"]');
+        let label = '';
+        if (icon) {
+          const m = String(icon.className).match(/anticon-[a-z0-9-]+/);
+          if (m) label = ICON_LABEL[m[0]] || '';
+        }
+        if (!label) {
+          const img = btn.querySelector('img[alt]');
+          const alt = img ? (img.getAttribute('alt') || '').trim() : '';
+          label = alt || '快捷操作';
+        }
+        btn.setAttribute('aria-label', label);
+      });
+  }
+
   function scanImpl() {
     // 抽屉/菜单项
     document
@@ -162,6 +199,9 @@
 
     // 品牌替换兜底
     fixAttribution();
+
+    // 无障碍：图标按钮补可访问名
+    fixIconButtonLabels();
   }
 
   let pending = false;
