@@ -1,0 +1,57 @@
+# cloudflare-tab 开发日志
+
+条目格式：日期 | 项 | 改动 | 原因 | 回滚 | 待跟进
+
+---
+
+## 2026-09-24 | P1 全站审查 + 移动端触控热区修复
+
+**项**：全面系统性排查（只读取证）+ 移动端热区适配
+
+**改动**：
+- `scripts/overrides.css`：新增 `@media (pointer: coarse)` 规则，`a.flex.items-center`
+  加 `position: relative` + 透明 `::before`（`height: 44px`，视觉无渲染），
+  使 16px 高的 footer 链接（豫ICP备案号、雨云推广）命中区扩至 44px。
+- 提交 `90be039`（本地提交，未 push）。
+
+**原因**：
+- 移动端实测命中区不足：footer 链接高 16px、搜索框 `input.ant-input-lg` 高 26px、
+  浮动快捷按钮 32x32，均低于 44/48px 建议值。
+- 硬约束「前端 web/ 布局与视觉绝对不变」与新要求「移动端适配须同步完成」冲突，
+  采用「透明伪元素扩命中区」同时满足：不改 web/ 源码、不改视觉、不影响 PC。
+
+**验证（三项全过）**：
+- 正向：`elementFromPoint` 探针在链接上沿上方 12px 命中该链接（命中区已扩展）；
+- 负向/回归：层级遮挡探针 = 0；改前/改后移动端截图像素一致（仅时钟数字变化）；
+- 灵敏度：PC 端同规则 `::before` computed height = `auto`（`pointer: coarse` 未命中，
+  证明媒体查询隔离有效，非「规则写了但全局生效」）。
+- 全量 e2e：84/84 全绿（`GOTAB_BASE_URL=http://127.0.0.1:8801`）。
+
+**回滚**：`git revert 90be039` 后 `npm run prepare` 重新生成 dist。
+
+**待跟进（TODO）**：
+1. **[P0 性能红线] 官方 bundle 未压缩**：`web/assets/main-DDZCDGo8.js` 原始 3,688,252 B，
+   非 minified（554 行）；生产 brotli 传输仍 1,105 KB。生产 Lighthouse Performance = 36
+   （本地 37），远低于 ≥90 红线。候选：prepare 层用已有传递依赖 esbuild 压缩
+   （`node_modules/.bin/esbuild` 存在，零新依赖）/ 改走 Pages Builds + `[pages_build_minify]`。
+   需批准后单独立项。
+2. **[P1 a11y]** `button-name` 扣分：`#render-buttons-right-bottom`、
+   `#render-buttons-left-top` 两个 32x32 图标按钮无 aria-label（94→100 可达）。
+3. **[P1 合规]** 底部残留官方品牌内容：官方 ICP 备案号「豫ICP备2023009053号-6」、
+   雨云推广「本网站由雨云提供计算服务」、gotab.cn / changelog / QQ 群链接。
+   自有部署展示他方备案号存在合规风险，建议 overrides 层隐藏或替换。
+4. **[P1 安全]** 未决三项：全站无速率限制、`_headers` 无安全响应头、`readPaging`
+   pageSize 无上限。
+5. **[P2]** `robots.txt` / `sitemap.xml` 仍指向官方 `https://web.gotab.cn/sitemap.xml`。
+6. **[P2]** 技术债：UA 字符串在 `functions/lib/upstream.ts` 与
+   `functions/api/search-suggest.ts` 重复；`getAwaitingApprovalUserAppellationList`
+   命名与实现不符；JWT 无吊销；`JWT_SECRET.padEnd(32,'x')`；多管理员可互相越权；
+   `getWeather` 冷缓存上游最长 ~12.5s；无 CI。
+7. **[P2 移动端残留]** 搜索框 26px、浮动按钮 32x32 命中区仍不足——两者均需触及
+   可见尺寸（input 不支持伪元素），属「视觉变更」，待裁决。
+8. **[P3]** 生产尚未部署 `1501fca` 与 `90be039`（部署需批准）。
+9. **[P3 运维]** 本地 `wrangler pages dev` workerd 审计期间崩溃循环（crash #7）并
+   卡死占端口；生产未观测到异常，待观察是否为本地 OOM。
+
+**环境备注**：审计期间曾以 `pgrep -f` 误伤同 shell 进程与 Firedre 的 wrangler dev
+wrapper（非本轮范围，如需可自行重启）；最终 8799/8801 端口已全部释放。
