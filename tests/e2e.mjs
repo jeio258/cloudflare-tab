@@ -377,16 +377,24 @@ const authHdr = { authorization: token };
   const sgText = await sg.text();
   const sgOk = sg.status() === 200 && sgText.startsWith('cb123(') && sgText.includes('"q"');
   eq('search-suggest JSONP', sgOk, true);
-  // 产物已同源化：main 包内不再直连百度 sugrec
+  // 产物已同源化：主 bundle 内不再直连百度 sugrec（新版入口为 index-*.js，静态 import main-*.js）
   {
     const r = await api.get(`${base}/`);
     const html = await r.text();
-    const m = html.match(/src="(\/assets\/main-[^"]+\.js)"/) || html.match(/href="(\/assets\/main-[^"]+\.js)"/);
-    if (!m) failures.push('main asset not found');
+    const m =
+      html.match(/src="(\/assets\/main-[^"]+\.js)"/) ||
+      html.match(/src="(\/assets\/index-[^"]+\.js)"/) ||
+      html.match(/href="(\/assets\/main-[^"]+\.js)"/);
+    if (!m) failures.push('entry asset not found');
     else {
-      const js = await (await api.get(base + m[1])).text();
-      eq('main 已改用 /api/search-suggest', js.includes('/api/search-suggest?wd='), true);
-      eq('main 不含百度直连', !js.includes('baidu.com/sugrec'), true);
+      let entry = await (await api.get(base + m[1])).text();
+      // 若入口是 index chunk，跟随其静态 import 找到 main chunk 再校验
+      if (!entry.includes('/api/search-suggest?wd=')) {
+        const im = entry.match(/main-[A-Za-z0-9._-]+\.js/);
+        if (im) entry = await (await api.get(base + '/assets/' + im[0])).text();
+      }
+      eq('main 已改用 /api/search-suggest', entry.includes('/api/search-suggest?wd='), true);
+      eq('main 不含百度直连', !entry.includes('baidu.com/sugrec'), true);
     }
   }
   // 分享页：getShareData(管理员 username 或 share_id) 返回其云数据
